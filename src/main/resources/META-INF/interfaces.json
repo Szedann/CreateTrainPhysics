@@ -1,0 +1,5 @@
+{
+  "com/simibubi/create/content/trains/entity/Carriage": [
+    "dev/szedann/create_train_physics/mixin"
+  ]
+}
