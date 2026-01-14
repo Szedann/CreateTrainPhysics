@@ -15,10 +15,8 @@ import net.createmod.catnip.data.Iterate;
 import net.createmod.catnip.data.Pair;
 import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -67,9 +65,6 @@ public abstract class MixinTrain {
 
     @Shadow
     public UUID id;
-
-    @Shadow
-    public abstract float maxTurnSpeed();
 
     @Shadow
     public abstract void crash();
@@ -245,11 +240,11 @@ public abstract class MixinTrain {
 
     }
 
-    @Inject(method = "acceleration", at = @At("HEAD"), cancellable = true)
-    public void acceleration(CallbackInfoReturnable<Float> cir) {
-        if (Config.requireFuel && fuelTicks <= 0)
-            cir.setReturnValue(AllConfigs.server().trains.trainAcceleration.getF() / (400 * 20));
-    }
+//    @Inject(method = "acceleration", at = @At("HEAD"), cancellable = true)
+//    public void acceleration(CallbackInfoReturnable<Float> cir) {
+//        if (Config.requireFuel && fuelTicks <= 0)
+//            cir.setReturnValue(AllConfigs.server().trains.trainAcceleration.getF() / (400 * 20));
+//    }
 
     @Inject(method = "approachTargetSpeed", at = @At("HEAD"), cancellable = true)
     public void approachTargetSpeed(float accelerationMod, CallbackInfo ci) {
@@ -264,6 +259,7 @@ public abstract class MixinTrain {
         double velocity = Math.abs(speed*20); // velocity in m/s
         double force;
         double maxPower = Math.abs(actualTarget-speed)*railways$getMass()*(20*20);
+        if(Config.requireFuel && fuelTicks <= 0) maxPower /= 20;
         if(Math.abs(targetSpeed) > Math.abs(speed) && targetSpeed * speed>0)
         {
             force = Math.min(Math.min(railways$getPower()/velocity, railways$getMaxTractiveEffort()), maxPower);
@@ -273,8 +269,6 @@ public abstract class MixinTrain {
             railways$powerUsage = 0;
         }
         double acceleration = railways$forceToAcceleration(force);
-        if (Config.requireFuel && fuelTicks <= 0)
-            acceleration = AllConfigs.server().trains.trainAcceleration.getF() / (400 * 20);
         if (speed < actualTarget)
             speed = Math.min(speed + acceleration, actualTarget);
         else if (speed > actualTarget)
@@ -320,12 +314,12 @@ public abstract class MixinTrain {
     @Inject(method = "tick", at=@At("TAIL"))
     public void tick(CallbackInfo ci) {
         railways$energyUsed += railways$powerUsage / 20;
-        double vmax = maxTurnSpeed();
-        carriages.forEach(c->c.forEachPresentEntity(cce->cce.getPassengers().forEach(p->{
-            if(!(p instanceof Player player)) return;
-            player.displayClientMessage(Component.literal(String.format("%.0fW P - %.0fb/s v - %.0fb/s vmax - %dkg mass",
-                    railways$powerUsage, speed*20, vmax*20, railways$getMass())), true);
-        })));
+//        double vmax = maxTurnSpeed();
+//        carriages.forEach(c->c.forEachPresentEntity(cce->cce.getPassengers().forEach(p->{
+//            if(!(p instanceof Player player)) return;
+//            player.displayClientMessage(Component.literal(String.format("%.0fW P - %.0fb/s v - %.0fb/s vmax - %dkg mass - %d fticks",
+//                    railways$powerUsage, speed*20, vmax*20, railways$getMass(), fuelTicks)), true);
+//        })));
     }
 
     @Inject(method = "burnFuel", at=@At("HEAD"), cancellable = true)
@@ -350,6 +344,7 @@ public abstract class MixinTrain {
     public Pair<Carriage, Vec3> railways$findCollidingCarriage(Level level, Vec3 start, Vec3 end, ResourceKey<Level> dimension) {
         Vec3 diff = end.subtract(start);
         double maxDistanceSqr = Math.pow(AllConfigs.server().trains.maxAssemblyLength.get(), 2.0);
+
 
         Trains: for (Train train : Create.RAILWAYS.sided(level).trains.values()) {
             if (train.id == this.id)

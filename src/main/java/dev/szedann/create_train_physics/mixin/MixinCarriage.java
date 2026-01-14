@@ -2,7 +2,6 @@ package dev.szedann.create_train_physics.mixin;
 
 import com.simibubi.create.content.trains.entity.Carriage;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
-import dev.szedann.create_train_physics.Create_train_physics;
 import dev.szedann.create_train_physics.accessors.IPhysicsCarriage;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -10,6 +9,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static dev.szedann.create_train_physics.CreateTrainPhysics.MOTOR_TAG;
+
 
 @Mixin(value = Carriage.class, remap = false)
 public abstract class MixinCarriage implements IPhysicsCarriage {
@@ -43,7 +45,7 @@ public abstract class MixinCarriage implements IPhysicsCarriage {
                 AtomicInteger engineCount = new AtomicInteger();
 
                 entity.getContraption().getBlocks().forEach((p, b) -> {
-                    if(b.state().getBlock().defaultBlockState().is(Create_train_physics.TRAIN_ENGINE_BLOCK)){
+                    if(b.state().getBlock().defaultBlockState().is(MOTOR_TAG)){
                         engineCount.getAndIncrement();
                     }
                 });
